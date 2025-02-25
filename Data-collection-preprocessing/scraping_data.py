@@ -50,7 +50,7 @@ async def crawl_article_titles(issue_id):
             return {issue_id: f"Gagal crawling: {result.error_message}"}
 
 async def main():
-    issue_ids = range(101, 106)  # ID issue yang merepresentasikan tahun terbit
+    issue_ids = range(1, 106)  # ID issue yang merepresentasikan tahun terbit
     tasks = [crawl_article_titles(issue_id) for issue_id in issue_ids]
     results = await asyncio.gather(*tasks)
 
@@ -69,5 +69,5 @@ async def main():
 
 # Run and save
 df_articles = asyncio.run(main())
-df_articles.to_csv('crawling_results.csv', index=False)
-print("Crawling results saved to crawling_results.csv")
+df_articles.to_csv('data_raw.csv', index=False)
+print("Crawling results saved to data_raw.csv")
