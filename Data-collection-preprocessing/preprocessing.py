@@ -15,14 +15,16 @@ def clean_title(title: str) -> str:
     tokens = [word for word in tokens if word not in stops]
     return ' '.join(tokens)
 
-df = pd.read_csv('data/raw_data.csv')
+df = pd.read_csv('../data/raw_data.csv')
 
 df['Judul'] = df['Judul'].apply(clean_title)
 
 df = df[~df['Judul'].str.lower().str.contains('halaman sampul')]
 
+df = df.drop_duplicates(subset=['Judul'])
+
 df = df.drop(columns=['Issue ID'])
 
-df.to_csv('data/cleaned_data.csv', index=False)
+df.to_csv('../data/cleaned_data1.csv', index=False)
 
-print("saved to data/cleaned_data.csv")
+print("saved to data/cleaned_data1.csv")
