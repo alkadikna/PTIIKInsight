@@ -5,12 +5,12 @@
 </p>
 
 ## Daftar Isi
-- [Tim/Collaborator](#collaborator-(gugugaga's-team))
+- [Tim/Collaborator](#tim-gugugaga)
 - [Sumber Data](#sumber-data)
 - [Struktur Repositori](#struktur-repositori)
 - [Tools](#tools)
 
-## Collaborator (GuguGaga's Team)
+## Tim GuguGaga
 - Muhammad Rajendra Alkautsar Dikna [@alkadikna](http://github.com/alkadikna)
 - Rochmanu Purnomohadi Erfitra [@nrcst](http://github.com/nrcst)
 - I Kadek Surya Satya Dharma [@Suryy16](http://github.com/suryy16)
