@@ -1,0 +1,6 @@
+pandas
+nltk
+bertopic
+umap-learn
+hdbscan
+scikit-learn
