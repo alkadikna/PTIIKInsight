@@ -19,24 +19,26 @@
 Data berasal dari arsip [Jurnal PTIIK Universitas Brawijaya](https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/archive)
 
 ## Struktur Repositori
-/PTIIKInsight  
-│── data  
-│────│── cleaned_data.csv  
-│────│── raw_data.csv  
-│  
-│── Data-collection-preprocessing  
-│────│── preprocessing.py  
-│────│── scraping_data.py  
-│  
-│── Model-evaluation  
-│────│── evaluation.ipynb  
-│  
-│── Model-training  
-│────│── download_model.txt  
-│────│── topic_modeling_results.csv  
-│────│── train.py  
-│  
-│── README.md  
+  ```bash
+  /PTIIKInsight  
+  │── data  
+  │    │── cleaned_data.csv  
+  │    │── raw_data.csv  
+  │  
+  │── Data-collection-preprocessing  
+  │    │── preprocessing.py  
+  │    │── scraping_data.py  
+  │  
+  │── Model-evaluation  
+  │    │── evaluation.ipynb  
+  │  
+  │── Model-training  
+  │    │── download_model.txt  
+  │    │── topic_modeling_results.csv  
+  │    │── train.py  
+  │  
+  │── README.md
+```  
 
 ## Tools
 Tools yang digunakan dalam projek ini:
