@@ -20,13 +20,14 @@ Data berasal dari arsip [jurnal PTIIK Universitas Brawijaya](https://j-ptiik.ub.
 
 ## Struktur Repositori
 📁 TopicModelingJPTIIK_MLOps  
-├── 📁 Data-collection-preprocessing ➥ Berisi source code untuk data collecting dan preprocessing  
-├── 📁 Model-training ➥ Source code training model  
-├── 📁 Model-evaluation ➥ Source code model evaluation  
-├── 📁 Data ➥ Data hasil scraping dan preprocessing  
+├── 📁 Data-collection-preprocessing > Berisi source code untuk data collecting dan preprocessing  
+├── 📁 Model-training > Source code training model  
+├── 📁 Model-evaluation > Source code model evaluation  
+├── 📁 Data > Data hasil scraping dan preprocessing  
 ├── 📄 README.md  
 
 ## Tools
 Tools yang digunakan dalam projek ini:
 - **Scraping Data** menggunakan [crawl4ai](https://github.com/unclecode/crawl4ai)
 - **Preprocessing** menggunakan RegEx, nltk
+- **Model** menggunakan BERTopic (percobaan menggunakan CountVectorizer dan embedded model seperti allenai-specter, paraphrase-multilingual-MiniLM-L12-v2, LaBSE, dan indoBERT)
