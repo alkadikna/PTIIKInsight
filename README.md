@@ -19,12 +19,24 @@
 Data berasal dari arsip [jurnal PTIIK Universitas Brawijaya](https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/archive)
 
 ## Struktur Repositori
-📁 TopicModelingJPTIIK_MLOps  
-├── 📁 Data-collection-preprocessing > Berisi source code untuk data collecting dan preprocessing  
-├── 📁 Model-training > Source code training model  
-├── 📁 Model-evaluation > Source code model evaluation  
-├── 📁 Data > Data hasil scraping dan preprocessing  
-├── 📄 README.md  
+/PTIIKInsight
+│── data
+│   │── cleaned_data.csv
+│   │── raw_data.csv
+│
+│── Data-collection-preprocessing
+│   │── preprocessing.py
+│   │── scraping_data.py
+│
+│── Model-evaluation
+│   │── evaluation.ipynb
+│
+│── Model-training
+│   │── download_model.txt
+│   │── topic_modeling_results.csv
+│   │── train.py
+│
+│── README.md
 
 ## Tools
 Tools yang digunakan dalam projek ini:
