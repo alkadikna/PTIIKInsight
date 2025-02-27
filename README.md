@@ -29,4 +29,4 @@ Data berasal dari arsip [jurnal PTIIK Universitas Brawijaya](https://j-ptiik.ub.
 ## Tools
 Tools yang digunakan dalam projek ini:
 - **Scraping Data** menggunakan [crawl4ai](https://github.com/unclecode/crawl4ai)
-- **Preprocessing** menggunakan ... (TBD)
+- **Preprocessing** menggunakan RegEx, nltk
