@@ -12,11 +12,10 @@ nest_asyncio.apply()
 async def crawl_article_titles(issue_id):
     # URL based on issue ID
     url = f"https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/view/{issue_id}"
-    
     # Extraction schema to get article titles, authors, and years
     schema = {
         "name": "Daftar Artikel",
-        "baseSelector": "li.note-jptiik",  # Adjust to HTML structure
+        "baseSelector": "li.note-jptiik, div.heading",  # Adjust to HTML structure
         "fields": [
             {
                 "name": "judul",
@@ -30,7 +29,7 @@ async def crawl_article_titles(issue_id):
             },
             {
                 "name": "published",
-                "selector": "div.published",
+                "selector": "div.published span.value.base",
                 "type": "text",
             }
         ],
@@ -56,23 +55,31 @@ async def main():
     tasks = [crawl_article_titles(issue_id) for issue_id in issue_ids]
     results = await asyncio.gather(*tasks)
 
-    # to df
     all_data = []
     for result in results:
         for issue_id, articles in result.items():
             if isinstance(articles, list):
+                common_published = None
                 for article in articles:
-
-
+                    pub = article.get("published")
+                    if pub and pub != "N/A":
+                        common_published = pub
+                        break
+                for article in articles:
+                    if article.get("judul", "N/A") == "N/A" and article.get("penulis", "N/A") == "N/A":
+                        continue
+                    published = article.get("published", "N/A")
+                    if published == "N/A" and common_published:
+                        published = common_published
                     all_data.append({
                         "Issue ID": issue_id,
                         "Judul": article.get("judul", "N/A"),
                         "Penulis": article.get("penulis", "N/A"),
-                        "Tahun": article.get("published", "N/A"),
+                        "Tahun": published,
                     })
             else:
                 all_data.append({"Issue ID": issue_id, "Judul": articles})
-
+    
     df = pd.DataFrame(all_data)
     return df
 
