@@ -4,3 +4,5 @@ bertopic
 umap-learn
 hdbscan
 scikit-learn
+nest_asyncio
+crawl4ai
