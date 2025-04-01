@@ -5,7 +5,7 @@ import os
 
 app = FastAPI()
 
-data_file = "../data/cleaned_data_api.csv"
+data_file = "../data/cleaned_data.csv"
 
 @app.post("/scrape")
 def run_scraping(background_tasks: BackgroundTasks):
