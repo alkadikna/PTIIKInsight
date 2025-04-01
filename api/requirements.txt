@@ -1,0 +1,7 @@
+pandas
+nltk
+asyncio
+nest_asyncio
+crawl4ai
+fastapi
+uvicorn

@@ -5,12 +5,14 @@ FROM python:3.10
 WORKDIR /app
 
 # Install dependencies
-COPY ../requirements.txt .
+COPY api/requirements.txt ./requirements.txt
 
 RUN pip install -r requirements.txt
 
-# Copy all file
-COPY . .
+# Copy files
+COPY api ./api
+COPY preprocessing ./preprocessing
+COPY data ./data
 
 # Run FastAPI using uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
