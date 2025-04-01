@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import nltk
+from nltk.corpus import stopwords
 
 nltk.download('stopwords')
 
@@ -20,7 +21,7 @@ def remove_first_word(title: str) -> str:
     return ' '.join(words[1:]) if len(words) > 1 else ''
 
 
-df = pd.read_csv('../data/raw_data.csv')
+df = pd.read_csv('../data/data_raw_v2.csv')
 
 df['Judul'] = df['Judul'].apply(clean_title)
 
@@ -33,6 +34,6 @@ df = df.drop_duplicates(subset=['Judul'])
 df = df.drop(columns=['Issue ID'])
 
 
-df.to_csv('../data/cleaned_data_nofirstword.csv', index=False)
+df.to_csv('../data/cleaned_data.csv', index=False)
 
 print("saved to data/cleaned_dat_nofirstword.csv")

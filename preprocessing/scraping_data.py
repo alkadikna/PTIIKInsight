@@ -50,8 +50,42 @@ async def crawl_article_titles(issue_id):
         else:
             return {issue_id: f"Gagal crawling: {result.error_message}"}
 
+async def get_latest_issue_id():
+    url = "https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/archive"
+    schema = {
+        "name": "Latest Issue ID",
+        "baseSelector": "div.issue-summary",
+        "fields": [
+            {
+                "name": "issue_id",
+                "selector": "a",
+                "type": "attribute",
+                "attribute": "href",
+            }
+        ],
+    }
+
+    run_config = CrawlerRunConfig(
+        cache_mode=CacheMode.BYPASS,
+        extraction_strategy=JsonCssExtractionStrategy(schema)
+    )
+
+    async with AsyncWebCrawler() as crawler:
+        result = await crawler.arun(url=url, config=run_config)
+        if result.success:
+            extracted_data = json.loads(result.extracted_content)
+            issue_ids = [
+                int(link.split("/")[-1]) for link in 
+                (item.get("issue_id") for item in extracted_data) 
+                if link and link.split("/")[-1].isdigit()
+            ]
+            return max(issue_ids) if issue_ids else 0
+        else:
+            raise Exception(f"Failed to fetch latest issue ID: {result.error_message}")
+
 async def main():
-    issue_ids = range(1, 107)  # ID issue yang merepresentasikan tahun terbit
+    latest_issue_id = await get_latest_issue_id()
+    issue_ids = range(1, latest_issue_id + 1)
     tasks = [crawl_article_titles(issue_id) for issue_id in issue_ids]
     results = await asyncio.gather(*tasks)
 
