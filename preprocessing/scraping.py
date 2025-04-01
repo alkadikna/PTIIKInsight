@@ -54,11 +54,11 @@ async def get_latest_issue_id():
     url = "https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/archive"
     schema = {
         "name": "Latest Issue ID",
-        "baseSelector": "div.issue-summary",
+        "baseSelector": "ul.issues_archive li div.obj_issue_summary",
         "fields": [
             {
                 "name": "issue_id",
-                "selector": "a",
+                "selector": "h2 a.title",
                 "type": "attribute",
                 "attribute": "href",
             }
@@ -79,6 +79,7 @@ async def get_latest_issue_id():
                 (item.get("issue_id") for item in extracted_data) 
                 if link and link.split("/")[-1].isdigit()
             ]
+            print(f"Latest issue IDs: {max(issue_ids)}")
             return max(issue_ids) if issue_ids else 0
         else:
             raise Exception(f"Failed to fetch latest issue ID: {result.error_message}")
@@ -119,5 +120,5 @@ async def main():
 
 # Run and save
 df_articles = asyncio.run(main())
-df_articles.to_csv('data_raw_v2.csv', index=False)
-print("Crawling results saved to data_raw_v2.csv")
+df_articles.to_csv('../data/data_raw_api.csv', index=False)
+print("Crawling results saved to data_raw_api.csv")
