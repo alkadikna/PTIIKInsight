@@ -7,13 +7,13 @@ WORKDIR /app
 # Copy requirements.txt dan install dependencies
 COPY api/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
+RUN playwright install-deps
 
-# Copy semua file dari `api/`
-COPY . .
+COPY ../api ./api
 
-# Copy folder preprocessing & data dari luar `api/`
 COPY ../preprocessing ./preprocessing
-COPY ../data ./data
+# COPY ../data ./data
+RUN mkdir -p /app/data
 
 # Ekspose port 8000 agar bisa diakses dari Codespaces
 EXPOSE 8000

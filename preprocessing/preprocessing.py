@@ -2,8 +2,14 @@ import pandas as pd
 import re
 import nltk
 from nltk.corpus import stopwords
+import os
 
 nltk.download('stopwords')
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+SOURCE_PATH = os.path.join(BASE_DIR, "../data/data_raw.csv") 
+TARGET_PATH = os.path.join(BASE_DIR, "../data/cleaned_data.csv") 
 
 
 def clean_title(title: str) -> str:
@@ -21,7 +27,7 @@ def remove_first_word(title: str) -> str:
     return ' '.join(words[1:]) if len(words) > 1 else ''
 
 
-df = pd.read_csv('../data/data_raw_api.csv')
+df = pd.read_csv(SOURCE_PATH)
 
 df['Judul'] = df['Judul'].apply(clean_title)
 
@@ -34,6 +40,6 @@ df = df.drop_duplicates(subset=['Judul'])
 df = df.drop(columns=['Issue ID'])
 
 
-df.to_csv('../data/cleaned_data_api.csv', index=False)
+df.to_csv(TARGET_PATH, index=False)
 
-print("saved to data/cleaned_data_api.csv")
+print("saved to", TARGET_PATH)

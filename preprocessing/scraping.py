@@ -5,6 +5,7 @@ from crawl4ai.async_configs import CrawlerRunConfig, CacheMode
 from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 import json
 import pandas as pd
+import os
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()
@@ -119,6 +120,10 @@ async def main():
     return df
 
 # Run and save
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw.csv") 
+
 df_articles = asyncio.run(main())
-df_articles.to_csv('../data/data_raw_api.csv', index=False)
-print("Crawling results saved to data_raw_api.csv")
+df_articles.to_csv(DATA_PATH, index=False)
+print("Crawling results saved to", DATA_PATH)

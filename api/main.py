@@ -5,14 +5,18 @@ import os
 
 app = FastAPI()
 
-data_file = "../data/cleaned_data.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DATA_PATH = os.path.join(BASE_DIR, "../data/cleaned_data.csv") 
+SCRAPING_PATH = os.path.join(BASE_DIR, "../preprocessing/scraping.py") 
+PREPROCESSING_PATH = os.path.join(BASE_DIR, "../preprocessing/preprocessing.py") 
 
 @app.post("/scrape")
 def run_scraping(background_tasks: BackgroundTasks):
     """Menjalankan proses scraping secara asynchronous."""
     def scrape():
-        subprocess.run(["python", "../preprocessing/scraping.py"], check=True)
-        subprocess.run(["python", "../preprocessing/preprocessing.py"], check=True)
+        subprocess.run(["python", SCRAPING_PATH], check=True)
+        subprocess.run(["python", PREPROCESSING_PATH], check=True)
         print("Scraping selesai dan data telah diproses.")
     
     background_tasks.add_task(scrape)
@@ -21,7 +25,7 @@ def run_scraping(background_tasks: BackgroundTasks):
 @app.get("/data")
 def get_scraped_data():
     """Mengembalikan hasil scraping yang sudah diproses."""
-    if os.path.exists(data_file):
-        df = pd.read_csv(data_file)
+    if os.path.exists(DATA_PATH):
+        df = pd.read_csv(DATA_PATH)
         return df.to_dict(orient="records")
     return {"message": "Data belum tersedia, silakan jalankan scraping."}
