@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy requirements.txt dan install dependencies
 COPY api/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
-RUN playwright install-deps
+RUN crawl4ai-setup
 
 COPY ../api ./api
 
