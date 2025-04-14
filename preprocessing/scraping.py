@@ -63,6 +63,12 @@ async def crawl_article_titles(issue_id, crawler):
                 "name": "published",
                 "selector": "div.published span.value.base",
                 "type": "text",
+            },
+            {
+                "name": "link_artikel",
+                "selector": "h3.title a",
+                "type": "attribute",
+                "attribute": "href"
             }
         ],
     }
@@ -78,11 +84,36 @@ async def crawl_article_titles(issue_id, crawler):
         return {issue_id: extracted_data}
     else:
         return {issue_id: f"Gagal crawling: {result.error_message}"}
+    
+async def crawl_abstract(link, crawler):
+    schema = {
+        "name": "Abstrak",
+        "baseSelector": "section.item.abstract",
+        "fields": [
+            {
+                "name": "abstrak",
+                "selector": "p",
+                "type": "text"
+            }
+        ]
+    }
+
+    run_config = CrawlerRunConfig(
+        cache_mode=CacheMode.BYPASS,
+        extraction_strategy=JsonCssExtractionStrategy(schema)
+    )
+
+    result = await crawler.arun(url=link, config=run_config)
+    if result.success:
+        extracted_data = json.loads(result.extracted_content)
+        if extracted_data and isinstance(extracted_data, list):
+            return extracted_data[0].get("abstrak", "")
+    return ""
 
 async def main():
     async with AsyncWebCrawler() as crawler:
         latest_issue_id = await get_latest_issue_id(crawler)
-        issue_ids = range(1, latest_issue_id + 1)
+        issue_ids = range(1, 3)
         tasks = [crawl_article_titles(issue_id, crawler) for issue_id in issue_ids]
         results = await asyncio.gather(*tasks)
 
@@ -102,21 +133,24 @@ async def main():
                         published = article.get("published", "N/A")
                         if published == "N/A" and common_published:
                             published = common_published
+                        link_artikel = article.get("link_artikel", "")
+                        abstrak = await crawl_abstract(link_artikel, crawler) if link_artikel else ""
                         all_data.append({
                             "Issue ID": issue_id,
                             "Judul": article.get("judul", "N/A"),
                             "Penulis": article.get("penulis", "N/A"),
                             "Tahun": published,
+                            "Link": link_artikel,
+                            "Abstrak": abstrak
                         })
                 else:
                     all_data.append({"Issue ID": issue_id, "Judul": articles})
-
         df = pd.DataFrame(all_data)
         return df
 
 # Run and save
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw.csv") 
+DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw_test.csv") 
 
 df_articles = asyncio.run(main())
 df_articles.to_csv(DATA_PATH, index=False)
