@@ -6,6 +6,8 @@ from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 import json
 import pandas as pd
 import os
+from playwright.async_api import async_playwright
+import logging
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()
@@ -84,36 +86,45 @@ async def crawl_article_titles(issue_id, crawler):
         return {issue_id: extracted_data}
     else:
         return {issue_id: f"Gagal crawling: {result.error_message}"}
-    
+
 async def crawl_abstract(link, crawler):
-    schema = {
-        "name": "Abstrak",
-        "baseSelector": "section.item.abstract",
-        "fields": [
-            {
-                "name": "abstrak",
-                "selector": "p",
-                "type": "text"
-            }
-        ]
-    }
+    print(f"[DEBUG] Mengambil abstrak dari: {link}")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)  # Set to True for headless mode
+        page = await browser.new_page()
+        try:
+            await page.goto(link, wait_until="load", timeout=60000) 
+        except Exception as e:
+            print(f"[ERROR] Gagal membuka {link}: {e}")
+            await browser.close()
+            return ""
 
-    run_config = CrawlerRunConfig(
-        cache_mode=CacheMode.BYPASS,
-        extraction_strategy=JsonCssExtractionStrategy(schema)
-    )
 
-    result = await crawler.arun(url=link, config=run_config)
-    if result.success:
-        extracted_data = json.loads(result.extracted_content)
-        if extracted_data and isinstance(extracted_data, list):
-            return extracted_data[0].get("abstrak", "")
-    return ""
+        #await page.wait_for_timeout(20)  # Wait longer to allow content to load
+        #await page.evaluate("window.scrollBy(0, document.body.scrollHeight)")  # Scroll the page
+        #await page.wait_for_timeout(1000)  # Wait a bit after scrolling
+
+        # Check if abstract element exists
+        abstrak_element = await page.query_selector("section.item.abstract > p")
+        if abstrak_element:
+            abstrak = await abstrak_element.inner_text()
+            print(f"[DEBUG] Abstrak ditemukan lewat Playwright langsung.")
+            await browser.close()
+            return abstrak
+
+        html = await page.content()
+        with open("debug_abstrak.html", "w", encoding="utf-8") as f:
+            f.write(html)
+
+        print("[WARNING] Tidak bisa temukan elemen abstrak langsung dari page.")
+        await browser.close()
+        return ""
+
 
 async def main():
     async with AsyncWebCrawler() as crawler:
         latest_issue_id = await get_latest_issue_id(crawler)
-        issue_ids = range(1, 3)
+        issue_ids = range(1, latest_issue_id + 1)  # Adjust the range as needed
         tasks = [crawl_article_titles(issue_id, crawler) for issue_id in issue_ids]
         results = await asyncio.gather(*tasks)
 
@@ -134,7 +145,15 @@ async def main():
                         if published == "N/A" and common_published:
                             published = common_published
                         link_artikel = article.get("link_artikel", "")
-                        abstrak = await crawl_abstract(link_artikel, crawler) if link_artikel else ""
+                        if link_artikel:
+                            article_id = link_artikel.split("/")[-1]
+                            abstract_url = f"https://j-ptiik.ub.ac.id/index.php/j-ptiik/article/view/{article_id}/0"
+                            abstrak = await crawl_abstract(abstract_url, crawler)
+                        else:
+                            abstrak = ""
+
+                        #abstrak = await crawl_abstract(link_artikel, crawler) if link_artikel else ""
+                        
                         all_data.append({
                             "Issue ID": issue_id,
                             "Judul": article.get("judul", "N/A"),
