@@ -7,7 +7,9 @@ import json
 import pandas as pd
 import os
 from playwright.async_api import async_playwright
-import logging
+import re
+import csv
+from datetime import datetime
 
 # Apply nest_asyncio to allow nested event loops
 nest_asyncio.apply()
@@ -90,7 +92,7 @@ async def crawl_article_titles(issue_id, crawler):
 async def crawl_abstract(link, crawler):
     print(f"[DEBUG] Mengambil abstrak dari: {link}")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)  # Set to True for headless mode
+        browser = await p.chromium.launch(headless=False)  
         page = await browser.new_page()
         try:
             await page.goto(link, wait_until="load", timeout=60000) 
@@ -98,11 +100,6 @@ async def crawl_abstract(link, crawler):
             print(f"[ERROR] Gagal membuka {link}: {e}")
             await browser.close()
             return ""
-
-
-        #await page.wait_for_timeout(20)  # Wait longer to allow content to load
-        #await page.evaluate("window.scrollBy(0, document.body.scrollHeight)")  # Scroll the page
-        #await page.wait_for_timeout(1000)  # Wait a bit after scrolling
 
         # Check if abstract element exists
         abstrak_element = await page.query_selector("section.item.abstract > p")
@@ -124,7 +121,7 @@ async def crawl_abstract(link, crawler):
 async def main():
     async with AsyncWebCrawler() as crawler:
         latest_issue_id = await get_latest_issue_id(crawler)
-        issue_ids = range(1, latest_issue_id + 1)  # Adjust the range as needed
+        issue_ids = range(1, 3)  
         tasks = [crawl_article_titles(issue_id, crawler) for issue_id in issue_ids]
         results = await asyncio.gather(*tasks)
 
@@ -141,9 +138,29 @@ async def main():
                     for article in articles:
                         if article.get("judul", "N/A") == "N/A" and article.get("penulis", "N/A") == "N/A":
                             continue
+                        
+                        # Formatting published date
                         published = article.get("published", "N/A")
                         if published == "N/A" and common_published:
                             published = common_published
+
+                        # Parsing tahun 
+                        tahun = "N/A"
+                        if published != "N/A":
+                            try:
+                                tahun = datetime.strptime(published.strip(), "%d %b %Y").year
+                            except ValueError:
+                                # Kalau format tidak cocok (misalnya hanya "2017" atau "Jan 2017")
+                                match = re.search(r"\b\d{4}\b", published)
+                                tahun = int(match.group(0)) if match else "N/A"
+
+                        # Extracting authors into lists
+                        penulis_raw = article.get("penulis", "N/A")
+                        if penulis_raw != "N/A":
+                            penulis_list = [p.strip() for p in penulis_raw.split(";") if p.strip()]
+                        else:
+                            penulis_list = ["N/A"]
+
                         link_artikel = article.get("link_artikel", "")
                         if link_artikel:
                             article_id = link_artikel.split("/")[-1]
@@ -152,19 +169,21 @@ async def main():
                         else:
                             abstrak = ""
 
-                        #abstrak = await crawl_abstract(link_artikel, crawler) if link_artikel else ""
-                        
                         all_data.append({
                             "Issue ID": issue_id,
                             "Judul": article.get("judul", "N/A"),
-                            "Penulis": article.get("penulis", "N/A"),
-                            "Tahun": published,
-                            "Link": link_artikel,
+                            "Penulis": penulis_list,
+                            "Tahun": tahun,
+                            #"Link": link_artikel,
                             "Abstrak": abstrak
                         })
                 else:
                     all_data.append({"Issue ID": issue_id, "Judul": articles})
         df = pd.DataFrame(all_data)
+
+        with open(JSON_PATH, "w", encoding="utf-8") as json_file:
+            json.dump(all_data, json_file, ensure_ascii=False, indent=2)
+        
         return df
 
 # Run and save
@@ -174,4 +193,6 @@ JSON_PATH = os.path.join(BASE_DIR, "../data/data_raw_test.json")
 
 df_articles = asyncio.run(main())
 df_articles.to_csv(DATA_PATH, index=False)
+df_articles.to_json(JSON_PATH, orient="records", indent=2, force_ascii=False)
 print("Crawling results saved to", DATA_PATH)
+
