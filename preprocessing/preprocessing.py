@@ -9,8 +9,8 @@ nltk.download('stopwords')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-SOURCE_PATH = os.path.join(BASE_DIR, "../data/data_raw_v3.json") 
-TARGET_PATH = os.path.join(BASE_DIR, "../data/cleaned_data_v3.json") 
+SOURCE_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.json") 
+TARGET_PATH = os.path.join(BASE_DIR, "../data/cleaned_data_v4.json") 
 
 def clean_text(text: str) -> str:
     text = text.lower()
@@ -31,15 +31,17 @@ with open(SOURCE_PATH, 'r', encoding='utf-8') as f:
 
 df = pd.DataFrame(data)
 
-# Preprocessing
-df['Judul'] = df['Judul'].apply(clean_text)
-df['Judul'] = df['Judul'].apply(remove_first_word)
-df['Abstrak'] = df['Abstrak'].apply(clean_text)
+# Delete noise
+df = df[~df['title'].str.lower().str.contains('halaman sampul')]
 
-# Delete noise, duplicates, and irrelevant data
-df = df[~df['Judul'].str.lower().str.contains('halaman sampul')]
-df = df.drop_duplicates(subset=['Judul'])
-df = df.drop(columns=['Issue ID'])
+# Preprocessing
+df['title'] = df['title'].apply(clean_text)
+df['title'] = df['title'].apply(remove_first_word)
+df['abstract'] = df['abstract'].apply(clean_text)
+
+# Delete duplicates, and irrelevant data
+df = df.drop_duplicates(subset=['title'])
+df = df.drop(columns=['issue ID'])
 
 # Save to JSON
 df.to_json(TARGET_PATH, orient='records', indent=4, force_ascii=False)
