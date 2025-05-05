@@ -15,32 +15,33 @@ from gensim.models import CoherenceModel
 
 def main():
     # Load data
-    with open("../data/cleaned_data_v3.json", 'r', encoding='utf-8') as f:
+    with open("../data/cleaned_data_v4.json", 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     df = pd.DataFrame(data)
-    df['Abstrak'] = df['Abstrak'].fillna('')
-    df['combined_text'] = df['Judul'] + ". " + df['Abstrak']
+    df['abstract'] = df['abstract'].fillna('')
+    df['combined_text'] = df['title'] + ". " + df['abstract']
     texts = df['combined_text'].tolist()
     tokenized_texts = [word_tokenize(text.lower()) for text in texts]
     dictionary = Dictionary(tokenized_texts)
     corpus = [dictionary.doc2bow(text) for text in tokenized_texts]
 
     # Model configs
-    embedding_models = [
-        "sentence-transformers/all-MiniLM-L6-v2",
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
-        "intfloat/multilingual-e5-large-instruct"
-    ]
-    min_topic_size = 10
+    # embedding_models = [
+    #     "sentence-transformers/all-MiniLM-L6-v2",
+    #     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    #     "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+    #     "intfloat/multilingual-e5-large-instruct"
+    # ]
+    embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    min_topic_sizes = [5, 10, 20]
 
     # Set MLflow experiment
-    mlflow.set_experiment("BERTopic-Model Embedding Experiment")
+    mlflow.set_experiment("BERTopic-Hyperparameter Experiment")
 
     # Gridsearch
-    for embedding_model_name in embedding_models:
-        with mlflow.start_run(run_name=f"{embedding_model_name.split('/')[-1]}-min{min_topic_size}"):
+    for min_topic_size in min_topic_sizes:
+        with mlflow.start_run(run_name=f"all-MiniLM-min{min_topic_size}"):
             mlflow.log_param("embedding_model", embedding_model_name)
             mlflow.log_param("min_topic_size", min_topic_size)
 
@@ -50,7 +51,7 @@ def main():
                 language="multilingual",
                 min_topic_size=min_topic_size,
                 calculate_probabilities=True
-            )
+                )
 
             topics, probs = topic_model.fit_transform(tqdm(texts, desc="Training BERTopic"))
 
@@ -72,7 +73,7 @@ def main():
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 # Simpan model
-                model_path = os.path.join(tmpdir, f"bertopic_model_{embedding_model_name.split('/')[-1]}_{min_topic_size}.pkl")
+                model_path = os.path.join(tmpdir, f"bertopic_model_all-MiniLM-min{min_topic_size}.pkl")
                 with open(model_path, "wb") as f:
                     pickle.dump(topic_model, f)
                 mlflow.log_artifact(model_path)
@@ -81,7 +82,7 @@ def main():
                 df['topics'] = topics
                 df['probabilities'] = [list(p) for p in probs]
 
-                result_path = os.path.join(tmpdir, f"topic_results_{embedding_model_name.split('/')[-1]}_{min_topic_size}.csv")
+                result_path = os.path.join(tmpdir, f"topic_results_all-MiniLM-min{min_topic_size}.csv")
                 df.to_csv(result_path, index=False)
                 mlflow.log_artifact(result_path)
 
