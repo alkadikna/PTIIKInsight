@@ -1,9 +1,13 @@
 from fastapi import FastAPI, BackgroundTasks
+from prometheus_fastapi_instrumentator import Instrumentator
 import subprocess
 import pandas as pd
 import os
+from model.predict import predict_topic
+from pydantic import BaseModel
 
 app = FastAPI()
+Instrumentator().instrument(app).expose(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,3 +33,12 @@ def get_scraped_data():
         df = pd.read_csv(DATA_PATH)
         return df.to_dict(orient="records")
     return {"message": "Data belum tersedia, silakan jalankan scraping."}
+
+class PredictRequest(BaseModel):
+    texts: list[str]
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    """Endpoint untuk prediksi topik dari teks."""
+    result = predict_topic(req.texts)
+    return {"topics": result}

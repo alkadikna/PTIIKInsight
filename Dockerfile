@@ -9,9 +9,11 @@ COPY api/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 RUN crawl4ai-setup
 
-COPY ../api ./api
+# Copy source code
+COPY api ./api
+COPY preprocessing ./preprocessing
+#COPY model ./model
 
-COPY ../preprocessing ./preprocessing
 # COPY ../data ./data
 RUN mkdir -p /app/data
 

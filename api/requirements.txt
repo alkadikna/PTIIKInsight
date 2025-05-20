@@ -5,3 +5,5 @@ nest_asyncio
 crawl4ai
 fastapi
 uvicorn
+prometheus_fastapi_instrumentator
+bertopic
