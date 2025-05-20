@@ -121,7 +121,7 @@ async def crawl_abstract(link, crawler):
 async def main():
     async with AsyncWebCrawler() as crawler:
         latest_issue_id = await get_latest_issue_id(crawler)
-        issue_ids = range(1, 3)  
+        issue_ids = range(40, 44)  
         tasks = [crawl_article_titles(issue_id, crawler) for issue_id in issue_ids]
         results = await asyncio.gather(*tasks)
 
@@ -170,12 +170,15 @@ async def main():
                             abstrak = ""
 
                         all_data.append({
-                            "Issue ID": issue_id,
-                            "Judul": article.get("judul", "N/A"),
-                            "Penulis": penulis_list,
-                            "Tahun": tahun,
-                            #"Link": link_artikel,
-                            "Abstrak": abstrak
+                            "issue ID": issue_id,
+                            "title": article.get("judul", "N/A"),
+                            "abstract": abstrak,
+                            "authors": penulis_list,
+                            "journal_conference_name": "JPTIIK",
+                            "publisher": "FILKOM UB",
+                            "year": tahun,
+                            "doi": link_artikel,
+                            "group_name": "GuguGaga"
                         })
                 else:
                     all_data.append({"Issue ID": issue_id, "Judul": articles})
@@ -188,8 +191,8 @@ async def main():
 
 # Run and save
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw_test.csv") 
-JSON_PATH = os.path.join(BASE_DIR, "../data/data_raw_test.json")
+DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.csv") 
+JSON_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.json")
 
 df_articles = asyncio.run(main())
 df_articles.to_csv(DATA_PATH, index=False)
