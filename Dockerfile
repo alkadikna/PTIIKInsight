@@ -12,7 +12,7 @@ RUN crawl4ai-setup
 # Copy source code
 COPY api ./api
 COPY preprocessing ./preprocessing
-#COPY model ./model
+COPY model ./model
 
 # COPY ../data ./data
 RUN mkdir -p /app/data

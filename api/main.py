@@ -42,3 +42,12 @@ def predict(req: PredictRequest):
     """Endpoint untuk prediksi topik dari teks."""
     result = predict_topic(req.texts)
     return {"topics": result}
+
+class PredictRequest(BaseModel):
+    texts: list[str]
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    """Endpoint untuk prediksi topik dari teks."""
+    result = predict_topic(req.texts)
+    return {"topics": result}
