@@ -9,8 +9,8 @@ nltk.download('stopwords')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-SOURCE_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.json") 
-TARGET_PATH = os.path.join(BASE_DIR, "../data/cleaned_data_v4.json") 
+SOURCE_PATH = os.path.join(BASE_DIR, "../data/raw/data_raw_v3.json") 
+TARGET_PATH = os.path.join(BASE_DIR, "../data/cleaned/cleaned_data_v3.json")
 
 def clean_text(text: str) -> str:
     text = text.lower()

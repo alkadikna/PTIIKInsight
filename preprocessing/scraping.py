@@ -191,8 +191,8 @@ async def main():
 
 # Run and save
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.csv") 
-JSON_PATH = os.path.join(BASE_DIR, "../data/data_raw_v4.json")
+DATA_PATH = os.path.join(BASE_DIR, "../data/raw/data_raw_v3.csv") 
+JSON_PATH = os.path.join(BASE_DIR, "../data/raw/data_raw_v3.json")
 
 df_articles = asyncio.run(main())
 df_articles.to_csv(DATA_PATH, index=False)
