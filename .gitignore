@@ -4,4 +4,5 @@ debug_abstrak.html
 test.py
 test2.py
 csvtojson.py
-bertopic_model_all-MiniLM-min20.pkl
+bertopic_model*.pkl
+venv 

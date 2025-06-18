@@ -11,3 +11,5 @@ nest_asyncio
 crawl4ai
 fastapi
 uvicorn
+torch
+sentence-transformers

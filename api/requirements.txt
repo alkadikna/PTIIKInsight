@@ -9,3 +9,5 @@ prometheus_fastapi_instrumentator
 bertopic
 scikit-learn
 joblib
+torch
+sentence-transformers

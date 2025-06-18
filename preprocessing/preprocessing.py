@@ -31,17 +31,38 @@ with open(SOURCE_PATH, 'r', encoding='utf-8') as f:
 
 df = pd.DataFrame(data)
 
+# Check if DataFrame is empty or missing required columns
+if df.empty:
+    print("Warning: DataFrame is empty")
+    exit(0)
+
+if 'title' not in df.columns:
+    print(f"Error: 'title' column not found. Available columns: {df.columns.tolist()}")
+    exit(1)
+
+print(f"Processing {len(df)} records...")
+
 # Delete noise
-df = df[~df['title'].str.lower().str.contains('halaman sampul')]
+df = df[~df['title'].str.lower().str.contains('halaman sampul', na=False)]
 
 # Preprocessing
 df['title'] = df['title'].apply(clean_text)
 df['title'] = df['title'].apply(remove_first_word)
-df['abstract'] = df['abstract'].apply(clean_text)
+
+# Only process abstract if it exists
+if 'abstract' in df.columns:
+    df['abstract'] = df['abstract'].apply(clean_text)
+else:
+    print("Warning: 'abstract' column not found, skipping abstract processing")
 
 # Delete duplicates, and irrelevant data
 df = df.drop_duplicates(subset=['title'])
-df = df.drop(columns=['issue ID'])
+
+# Drop issue ID column if it exists
+if 'issue ID' in df.columns:
+    df = df.drop(columns=['issue ID'])
+
+print(f"Processed data saved with {len(df)} records")
 
 # Save to JSON
 df.to_json(TARGET_PATH, orient='records', indent=4, force_ascii=False)
