@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  - job_name: 'fastapi-app'
+    metrics_path: /metrics
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['fastapi-app:8000']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'python_.*'
+        target_label: service
+        replacement: 'fastapi-app'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
