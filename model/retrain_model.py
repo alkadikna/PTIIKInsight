@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def retrain_model():
     
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_PATH = os.path.join(BASE_DIR, "../data/cleaned_data.csv")
+    DATA_PATH = os.path.join(BASE_DIR, "../data/cleaned/cleaned_data.csv")
     MODEL_PATH = os.path.join(BASE_DIR, "bertopic_model_all-MiniLM-min20_retrained.pkl")
     
     try:

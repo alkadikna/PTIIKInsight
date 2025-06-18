@@ -30,7 +30,7 @@ scraping_errors_total = Counter('scraping_errors_total', 'Total number of scrapi
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DATA_PATH = os.path.join(BASE_DIR, "../data/cleaned_data.csv") 
+DATA_PATH = os.path.join(BASE_DIR, "../data/cleaned/cleaned_data.csv") 
 SCRAPING_PATH = os.path.join(BASE_DIR, "../preprocessing/scraping.py") 
 PREPROCESSING_PATH = os.path.join(BASE_DIR, "../preprocessing/preprocessing.py")
 

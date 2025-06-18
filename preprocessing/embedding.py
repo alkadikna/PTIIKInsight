@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 from sentence_transformers import SentenceTransformer
 
-df = pd.read_csv('../data/cleaned_data_nofirstword.csv')
+df = pd.read_csv('../data/cleaned/cleaned_data.csv')
 
 # Model embedding
 model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")

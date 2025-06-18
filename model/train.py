@@ -13,9 +13,8 @@ from gensim.corpora import Dictionary
 from gensim.models import CoherenceModel
 
 
-def main():
-    # Load data
-    with open("../data/cleaned_data_v4.json", 'r', encoding='utf-8') as f:
+def main():    # Load data
+    with open("../data/cleaned/cleaned_data_v3.json", 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     df = pd.DataFrame(data)
