@@ -34,7 +34,8 @@ jobs:
           code:
             - '**/*.py'
             - '**/*.yml'
-            - '**/*.yaml'            - '**/*.json'
+            - '**/*.yaml'            
+            - '**/*.json'
 
   code-quality:
     name: Code Quality & Security
