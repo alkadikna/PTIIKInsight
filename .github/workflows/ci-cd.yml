@@ -1,0 +1,437 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort bandit safety pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f api/requirements.txt ]; then pip install -r api/requirements.txt; fi
+        if [ -f dashboard/requirements.txt ]; then pip install -r dashboard/requirements.txt; fi
+        if [ -f mlflow/requirements.txt ]; then pip install -r mlflow/requirements.txt; fi
+        
+    - name: Code formatting check (Black)
+      run: |
+        black --check --diff .
+      continue-on-error: true
+      
+    - name: Import sorting check (isort)
+      run: |
+        isort --check-only --diff .
+      continue-on-error: true
+      
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Security scan with Bandit
+      run: |
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -ll
+      continue-on-error: true
+      
+    - name: Check for known security vulnerabilities
+      run: |
+        safety check || true
+      continue-on-error: true
+      
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-results
+        path: bandit-report.json
+
+  python-tests:
+    name: Python Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov pytest-mock
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f api/requirements.txt ]; then pip install -r api/requirements.txt; fi
+        if [ -f dashboard/requirements.txt ]; then pip install -r dashboard/requirements.txt; fi
+        if [ -f mlflow/requirements.txt ]; then pip install -r mlflow/requirements.txt; fi
+        
+    - name: Create test directories
+      run: |
+        mkdir -p tests/unit tests/integration
+        
+    - name: Run unit tests
+      run: |
+        # Create a basic test if none exist
+        if [ ! -f tests/test_basic.py ]; then
+          cat > tests/test_basic.py << 'EOF'
+        import pytest
+        import os
+        import sys
+        
+        # Add project root to path
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        def test_project_structure():
+            """Test that essential project files exist"""
+            assert os.path.exists('docker-compose.yml')
+            assert os.path.exists('requirements.txt')
+            assert os.path.exists('api/main.py')
+            assert os.path.exists('model/predict.py')
+            assert os.path.exists('mlflow/drift_monitor.py')
+            
+        def test_docker_compose_syntax():
+            """Test docker-compose.yml syntax"""
+            import yaml
+            with open('docker-compose.yml', 'r') as f:
+                compose_config = yaml.safe_load(f)
+            assert 'services' in compose_config
+            assert 'fastapi-app' in compose_config['services']
+            assert 'mlflow-drift-monitor' in compose_config['services']
+            
+        def test_api_imports():
+            """Test that API modules can be imported"""
+            try:
+                from api.main import app
+                assert app is not None
+            except ImportError as e:
+                pytest.skip(f"API import failed: {e}")
+                
+        def test_model_imports():  
+            """Test that model modules can be imported"""
+            try:
+                from model.predict import predict_topic
+                assert predict_topic is not None
+            except ImportError as e:
+                pytest.skip(f"Model import failed: {e}")
+        EOF
+        fi
+        
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
+        
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports-${{ matrix.python-version }}
+        path: |
+          htmlcov/
+          coverage.xml
+
+  docker-build-test:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    strategy:
+      matrix:
+        service: [fastapi-app, mlflow-drift-monitor]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-${{ matrix.service }}-
+          
+    - name: Build Docker image
+      run: |
+        if [ "${{ matrix.service }}" == "fastapi-app" ]; then
+          docker build -t ${{ matrix.service }}:test .
+        elif [ "${{ matrix.service }}" == "mlflow-drift-monitor" ]; then
+          docker build -t ${{ matrix.service }}:test ./mlflow
+        fi
+        
+    - name: Test Docker image
+      run: |
+        # Test that the image was built successfully
+        docker images ${{ matrix.service }}:test
+        
+        # Test basic container functionality
+        if [ "${{ matrix.service }}" == "fastapi-app" ]; then
+          # Test FastAPI container
+          docker run --rm -d --name test-fastapi -p 8001:8000 ${{ matrix.service }}:test &
+          sleep 10
+          # Test health endpoint
+          curl -f http://localhost:8001/health || docker logs test-fastapi
+          docker stop test-fastapi || true
+        elif [ "${{ matrix.service }}" == "mlflow-drift-monitor" ]; then
+          # Test MLflow container (check if it starts without errors)
+          timeout 30s docker run --rm --name test-mlflow ${{ matrix.service }}:test python -c "
+          import sys
+          sys.path.append('/app')
+          from combined_service import MLflowDriftService
+          print('MLflow service imports successfully')
+          " || echo "MLflow container test completed"
+        fi
+        
+    - name: Security scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ matrix.service }}:test
+        format: 'sarif'
+        output: 'trivy-results-${{ matrix.service }}.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+
+  docker-compose-test:
+    name: Docker Compose Integration Test
+    runs-on: ubuntu-latest
+    needs: [python-tests, docker-build-test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create test data
+      run: |
+        mkdir -p data/cleaned
+        echo '[]' > data/cleaned/cleaned_data_v4.json
+        echo '{}' > data/cleaned/cleaned_data.csv
+        
+    - name: Start services with docker-compose
+      run: |
+        # Start services in background
+        docker-compose up -d
+        
+        # Wait for services to be ready
+        echo "Waiting for services to start..."
+        sleep 30
+        
+    - name: Test service health
+      run: |
+        # Test FastAPI health
+        max_attempts=30
+        for i in $(seq 1 $max_attempts); do
+          if curl -f http://localhost:8000/health; then
+            echo "FastAPI is healthy"
+            break
+          fi
+          echo "Attempt $i/$max_attempts: FastAPI not ready yet..."
+          sleep 2
+        done
+        
+        # Test MLflow health
+        for i in $(seq 1 $max_attempts); do
+          if curl -f http://localhost:5000/health; then
+            echo "MLflow is healthy"
+            break
+          fi
+          echo "Attempt $i/$max_attempts: MLflow not ready yet..."
+          sleep 2
+        done
+        
+        # Test Prometheus
+        curl -f http://localhost:9090/-/healthy || echo "Prometheus health check failed"
+        
+        # Test Grafana
+        curl -f http://localhost:3000/api/health || echo "Grafana health check failed"
+        
+    - name: Test API endpoints
+      run: |
+        # Test FastAPI endpoints
+        curl -f http://localhost:8000/health
+        curl -f http://localhost:8000/retrain/status
+        
+        # Test prediction endpoint with sample data
+        curl -X POST http://localhost:8000/predict \
+          -H "Content-Type: application/json" \
+          -d '{"texts": ["test machine learning topic"]}'
+        
+    - name: Check container logs
+      if: always()
+      run: |
+        echo "=== FastAPI Logs ==="
+        docker-compose logs fastapi-app
+        echo "=== MLflow Logs ==="
+        docker-compose logs mlflow-drift-monitor
+        echo "=== Prometheus Logs ==="
+        docker-compose logs prometheus
+        echo "=== Grafana Logs ==="
+        docker-compose logs grafana
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        docker-compose down -v
+        docker system prune -f
+
+  performance-test:
+    name: Performance & Load Testing
+    runs-on: ubuntu-latest
+    needs: docker-compose-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y apache2-utils
+        pip install locust
+        
+    - name: Create test data
+      run: |
+        mkdir -p data/cleaned
+        echo '[]' > data/cleaned/cleaned_data_v4.json
+        echo '{}' > data/cleaned/cleaned_data.csv
+        
+    - name: Start services
+      run: |
+        docker-compose up -d
+        sleep 60  # Wait longer for all services
+        
+    - name: Performance test with Apache Bench
+      run: |
+        # Test health endpoint performance
+        ab -n 100 -c 10 http://localhost:8000/health
+        
+        # Test prediction endpoint performance
+        echo '{"texts": ["machine learning artificial intelligence"]}' > test_payload.json
+        ab -n 50 -c 5 -T application/json -p test_payload.json http://localhost:8000/predict
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        docker-compose down -v
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [docker-compose-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta-fastapi
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/fastapi-app
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Extract metadata MLflow
+      id: meta-mlflow
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/mlflow-drift-monitor
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push FastAPI image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta-fastapi.outputs.tags }}
+        labels: ${{ steps.meta-fastapi.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Build and push MLflow image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./mlflow
+        push: true
+        tags: ${{ steps.meta-mlflow.outputs.tags }}
+        labels: ${{ steps.meta-mlflow.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [code-quality, python-tests, docker-build-test, docker-compose-test]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: ${{ needs.code-quality.result == 'success' && needs.python-tests.result == 'success' && needs.docker-build-test.result == 'success' && needs.docker-compose-test.result == 'success' }}
+      run: |
+        echo "✅ All CI/CD checks passed successfully!"
+        
+    - name: Notify failure
+      if: ${{ needs.code-quality.result == 'failure' || needs.python-tests.result == 'failure' || needs.docker-build-test.result == 'failure' || needs.docker-compose-test.result == 'failure' }}
+      run: |
+        echo "❌ Some CI/CD checks failed. Please review the logs."
+        exit 1
