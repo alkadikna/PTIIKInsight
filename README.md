@@ -54,6 +54,7 @@ Tools yang digunakan dalam projek ini:
 - **Model** menggunakan BERTopic (percobaan menggunakan CountVectorizer dan embedded model seperti allenai-specter, paraphrase-multilingual-MiniLM-L12-v2, LaBSE, dan indoBERT)
 - **API** menggunakan FastAPI dengan Uvicorn
 - **Monitoring** menggunakan Prometheus dan Grafana
+- **Dashboarding** menggunakan Streamlit
 - **Containerization** menggunakan Docker dan Docker Compose
 
 ## Monitoring Dashboard
