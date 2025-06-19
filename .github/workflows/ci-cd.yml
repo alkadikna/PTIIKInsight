@@ -1,0 +1,74 @@
+name: Code Quality & Security Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  code-quality-security:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort bandit safety pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f api/requirements.txt ]; then pip install -r api/requirements.txt; fi
+        if [ -f dashboard/requirements.txt ]; then pip install -r dashboard/requirements.txt; fi
+        if [ -f mlflow/requirements.txt ]; then pip install -r mlflow/requirements.txt; fi
+        
+    - name: Code formatting check (Black)
+      run: |
+        black --check --diff .
+      continue-on-error: true
+      
+    - name: Import sorting check (isort)
+      run: |
+        isort --check-only --diff .
+      continue-on-error: true
+      
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Security scan with Bandit
+      run: |
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -ll
+      continue-on-error: true
+      
+    - name: Check for known security vulnerabilities
+      run: |
+        safety check || true
+      continue-on-error: true
+      
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: bandit-report.json
