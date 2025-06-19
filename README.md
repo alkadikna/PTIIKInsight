@@ -20,33 +20,6 @@
 ## Sumber Data
 Data berasal dari arsip [Jurnal PTIIK Universitas Brawijaya](https://j-ptiik.ub.ac.id/index.php/j-ptiik/issue/archive)
 
-## Struktur Repositori
-```bash
-/PTIIKInsight  
-│  
-├── data  
-│   ├── cleaned_data_nofirstword.csv  
-│   ├── cleaned_data.csv  
-│   ├── data_raw_v2.csv  
-│   ├── eda.ipynb  
-│   ├── embedded_titles.pkl  
-│   └── raw_data.csv  
-│  
-├── model  
-│   ├── train.py  
-│   └── evaluation  
-│       └── evaluation.ipynb  
-│  
-├── preprocessing  
-│   ├── embedding.py  
-│   ├── preprocessing_translate.py  
-│   ├── preprocessing.py  
-│   └── scraping_data.py  
-│  
-├── README.md 
-└── requirements.txt
-```
-
 ## Tools
 Tools yang digunakan dalam projek ini:
 - **Scraping Data** menggunakan [crawl4ai](https://github.com/unclecode/crawl4ai)
