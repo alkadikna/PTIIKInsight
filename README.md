@@ -1,5 +1,6 @@
-# ANALISIS TREN TOPIK PENELITIAN DALAM PUBLIKASI JURNAL PTIIK
+# PTIIKInsight
 
+GitBook: https://gugugaga.gitbook.io/ptiikinsight/
 <p align="center">
   <img src="https://github.com/user-attachments/assets/51ba4164-4edc-4c26-bdb2-e21cfbc94abd" alt="JPTIIK" height="200"/>
 </p>
@@ -7,7 +8,6 @@
 ## Daftar Isi
 - [Tim/Collaborator](#tim-gugugaga)
 - [Sumber Data](#sumber-data)
-- [Struktur Repositori](#struktur-repositori)
 - [Tools](#tools)
 - [Monitoring Dashboard](#monitoring-dashboard)
 - [Installation and Setup](#installation-and-setup)
